@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #0a0a1a;
+  --bg-surface: #111127;
+  --bg-card: rgba(30, 30, 60, 0.6);
+  --border-subtle: rgba(99, 102, 241, 0.2);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent: #6366f1;
+  --accent-glow: rgba(99, 102, 241, 0.3);
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Glassmorphism card */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 24px var(--accent-glow);
+}
+
+/* Score gauge */
+.score-gauge {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  position: relative;
+}
+.score-gauge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  padding: 4px;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+.score-good::before { background: linear-gradient(135deg, #22c55e, #3b82f6); }
+.score-medium::before { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+.score-bad::before { background: linear-gradient(135deg, #ef4444, #dc2626); }
+
+/* Severity badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.badge-critical { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+.badge-high { background: rgba(249, 115, 22, 0.2); color: #fdba74; }
+.badge-medium { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+.badge-low { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+.badge-info { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
+
+/* Animated gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Pulse animation for loading */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px var(--accent-glow); }
+  50% { box-shadow: 0 0 20px var(--accent-glow); }
+}
+.pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  min-height: 100vh;
+  padding: 24px 16px;
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+.sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.sidebar a:hover,
+.sidebar a.active {
+  background: var(--accent-glow);
+  color: var(--text-primary);
+}
+
+.main-content {
+  margin-left: 260px;
+  padding: 32px;
+  min-height: 100vh;
+}
+
+/* Table */
+.findings-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.findings-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.findings-table td {
+  padding: 12px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+.findings-table tr:hover {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+/* React Flow overrides */
+.react-flow__node {
+  border-radius: 12px !important;
+  border: 1px solid var(--border-subtle) !important;
+  background: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  padding: 12px 16px !important;
+  font-size: 13px !important;
+}
+.react-flow__edge-path {
+  stroke: var(--accent) !important;
+  stroke-width: 2 !important;
+}
+.react-flow__background {
+  background: var(--bg-primary) !important;
+}
