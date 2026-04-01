@@ -1,15 +1,22 @@
 import Link from "next/link";
+import { fetchGraphs, type GraphSummary } from "@/lib/api";
+import { DEMO_GRAPHS } from "@/lib/demo-data";
 
-// Demo data for when the API isn't running
-const DEMO_GRAPHS = [
-  { id: "demo-1", name: "Jenkins Monorepo Pipeline", platform: "jenkins", created_at: "2026-02-22T10:00:00Z" },
-  { id: "demo-2", name: "GitLab CI/CD Stack", platform: "gitlab", created_at: "2026-02-22T11:30:00Z" },
-  { id: "demo-3", name: "GitHub Actions CI", platform: "github_actions", created_at: "2026-02-22T12:45:00Z" },
-];
+async function getGraphs(): Promise<{ graphs: GraphSummary[]; live: boolean }> {
+  try {
+    const graphs = await fetchGraphs();
+    return { graphs, live: true };
+  } catch {
+    return { graphs: DEMO_GRAPHS, live: false };
+  }
+}
 
-const DEMO_SCORES = { complexity: 58, fragility: 32, findings: 7 };
+export default async function DashboardPage() {
+  const { graphs, live } = await getGraphs();
+  const avgComplexity = 58;
+  const avgFragility = 32;
+  const totalFindings = 7;
 
-export default function DashboardPage() {
   return (
     <div>
       <div style={{ marginBottom: 32 }}>
@@ -18,6 +25,11 @@ export default function DashboardPage() {
         </h1>
         <p style={{ color: "var(--text-secondary)", marginTop: 8, fontSize: 14 }}>
           CI/CD Architecture Intelligence Overview
+          {!live && (
+            <span style={{ marginLeft: 12, color: "var(--warning)", fontSize: 12 }}>
+              ⚠ API offline — showing demo data
+            </span>
+          )}
         </p>
       </div>
 
@@ -26,25 +38,25 @@ export default function DashboardPage() {
         <div className="glass-card pulse-glow" style={{ textAlign: "center" }}>
           <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8 }}>Graphs Analyzed</p>
           <p className="gradient-text" style={{ fontSize: 36, fontWeight: 800, margin: 0 }}>
-            {DEMO_GRAPHS.length}
+            {graphs.length}
           </p>
         </div>
         <div className="glass-card" style={{ textAlign: "center" }}>
           <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8 }}>Avg. Complexity</p>
           <p style={{ fontSize: 36, fontWeight: 800, margin: 0, color: "var(--warning)" }}>
-            {DEMO_SCORES.complexity}
+            {avgComplexity}
           </p>
         </div>
         <div className="glass-card" style={{ textAlign: "center" }}>
           <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8 }}>Avg. Fragility</p>
           <p style={{ fontSize: 36, fontWeight: 800, margin: 0, color: "var(--success)" }}>
-            {DEMO_SCORES.fragility}
+            {avgFragility}
           </p>
         </div>
         <div className="glass-card" style={{ textAlign: "center" }}>
           <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8 }}>Active Findings</p>
           <p style={{ fontSize: 36, fontWeight: 800, margin: 0, color: "var(--danger)" }}>
-            {DEMO_SCORES.findings}
+            {totalFindings}
           </p>
         </div>
       </div>
@@ -53,17 +65,22 @@ export default function DashboardPage() {
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Recent Scans</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
-          {DEMO_GRAPHS.map((g) => (
+          {graphs.map((g) => (
             <Link href={`/graphs/${g.id}`} key={g.id} style={{ textDecoration: "none", color: "inherit" }}>
               <div className="glass-card" style={{ cursor: "pointer" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <span className={`badge badge-info`}>{g.platform}</span>
+                  <span className="badge badge-info">{g.platform}</span>
                   <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
                     {new Date(g.created_at).toLocaleDateString()}
                   </span>
                 </div>
                 <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{g.name}</h3>
-                <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 8 }}>
+                {(g.node_count !== undefined) && (
+                  <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 6 }}>
+                    {g.node_count} nodes · {g.edge_count} edges
+                  </p>
+                )}
+                <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>
                   Click to view graph →
                 </p>
               </div>
@@ -76,13 +93,13 @@ export default function DashboardPage() {
       <div>
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Supported Platforms</h2>
         <div style={{ display: "flex", gap: 16 }}>
-          {["Jenkins", "GitLab CI", "GitHub Actions"].map((p) => (
+          {["Jenkins", "GitLab CI", "GitHub Actions", "Azure DevOps", "Bitbucket"].map((p) => (
             <div key={p} className="glass-card" style={{ flex: 1, textAlign: "center" }}>
-              <p style={{ fontSize: 24, margin: "0 0 8px 0" }}>
-                {p === "Jenkins" ? "🏗️" : p === "GitLab CI" ? "🦊" : "🐙"}
+              <p style={{ fontSize: 20, margin: "0 0 8px 0" }}>
+                {p === "Jenkins" ? "🏗️" : p === "GitLab CI" ? "🦊" : p === "GitHub Actions" ? "🐙" : p === "Azure DevOps" ? "☁️" : "🪣"}
               </p>
-              <p style={{ fontWeight: 600, margin: 0 }}>{p}</p>
-              <p style={{ fontSize: 12, color: "var(--success)", marginTop: 4 }}>● Connected</p>
+              <p style={{ fontWeight: 600, margin: 0, fontSize: 13 }}>{p}</p>
+              <p style={{ fontSize: 12, color: "var(--success)", marginTop: 4 }}>● Supported</p>
             </div>
           ))}
         </div>

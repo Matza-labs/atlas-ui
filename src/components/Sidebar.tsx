@@ -9,6 +9,8 @@ export default function Sidebar() {
     const links = [
         { href: "/", label: "Dashboard", icon: "📊" },
         { href: "/graphs", label: "Graphs", icon: "🔗" },
+        { href: "/billing", label: "Billing", icon: "💳" },
+        { href: "/admin/compare", label: "Admin", icon: "🛡️" },
     ];
 
     return (

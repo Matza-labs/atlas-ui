@@ -1,16 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-
-/* ── Demo data ── */
-const DEMO_SNAPSHOTS = [
-    { date: '2026-01-15', complexity: 45, fragility: 60, maturity: 35, findings: 12 },
-    { date: '2026-01-22', complexity: 42, fragility: 55, maturity: 40, findings: 10 },
-    { date: '2026-01-29', complexity: 40, fragility: 48, maturity: 45, findings: 8 },
-    { date: '2026-02-05', complexity: 38, fragility: 42, maturity: 52, findings: 7 },
-    { date: '2026-02-12', complexity: 35, fragility: 38, maturity: 58, findings: 5 },
-    { date: '2026-02-19', complexity: 33, fragility: 35, maturity: 65, findings: 4 },
-];
+import { useState, useEffect } from 'react';
+import { fetchTrends, type TrendSnapshot } from '@/lib/api';
+import { DEMO_SNAPSHOTS } from '@/lib/demo-data';
 
 const METRICS = [
     { key: 'complexity', label: 'Complexity', color: '#f59e0b', lower: true },
@@ -28,17 +20,16 @@ function TrendBadge({ delta, improved }: { delta: number; improved: boolean }) {
     );
 }
 
-function MiniChart({ data, metricKey, color }: { data: typeof DEMO_SNAPSHOTS; metricKey: string; color: string }) {
-    const values = data.map((d: any) => d[metricKey] as number);
+function MiniChart({ data, metricKey, color }: { data: TrendSnapshot[]; metricKey: string; color: string }) {
+    const values = data.map((d) => (d as unknown as Record<string, number>)[metricKey]);
     const max = Math.max(...values, 100);
-    const min = 0;
     const width = 400;
     const height = 80;
 
     const points = values
         .map((v, i) => {
             const x = (i / (values.length - 1)) * width;
-            const y = height - ((v - min) / (max - min)) * height;
+            const y = height - (v / max) * height;
             return `${x},${y}`;
         })
         .join(' ');
@@ -55,7 +46,7 @@ function MiniChart({ data, metricKey, color }: { data: typeof DEMO_SNAPSHOTS; me
             />
             {values.map((v, i) => {
                 const x = (i / (values.length - 1)) * width;
-                const y = height - ((v - min) / (max - min)) * height;
+                const y = height - (v / max) * height;
                 return <circle key={i} cx={x} cy={y} r="4" fill={color} />;
             })}
         </svg>
@@ -63,7 +54,18 @@ function MiniChart({ data, metricKey, color }: { data: typeof DEMO_SNAPSHOTS; me
 }
 
 export default function TrendsPage() {
-    const data = DEMO_SNAPSHOTS;
+    const [data, setData] = useState<TrendSnapshot[]>(DEMO_SNAPSHOTS);
+    const [live, setLive] = useState(false);
+
+    useEffect(() => {
+        // Try fetching trends for the first available graph
+        fetchTrends("default")
+            .then((snapshots) => {
+                if (snapshots.length > 0) { setData(snapshots); setLive(true); }
+            })
+            .catch(() => { /* keep demo */ });
+    }, []);
+
     const latest = data[data.length - 1];
     const prev = data[data.length - 2];
 
@@ -74,13 +76,18 @@ export default function TrendsPage() {
             </h1>
             <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>
                 Track your CI/CD health scores over time
+                {!live && (
+                    <span style={{ marginLeft: 12, color: '#f59e0b', fontSize: '0.8rem' }}>
+                        ⚠ API offline — showing demo data
+                    </span>
+                )}
             </p>
 
             {/* Summary cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                 {METRICS.map((m) => {
-                    const curr = (latest as any)[m.key];
-                    const pre = (prev as any)[m.key];
+                    const curr = (latest as unknown as Record<string, number>)[m.key];
+                    const pre = (prev as unknown as Record<string, number>)[m.key];
                     const delta = curr - pre;
                     const improved = m.lower ? delta < 0 : delta > 0;
                     return (

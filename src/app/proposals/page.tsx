@@ -1,42 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-
-/* ── Demo data ── */
-const DEMO_PROPOSALS = [
-    {
-        id: 'p-001',
-        title: 'Add timeouts to all build jobs',
-        status: 'pending',
-        author: 'yoad',
-        suggestion_count: 4,
-        created_at: '2026-02-23',
-    },
-    {
-        id: 'p-002',
-        title: 'Pin container images to SHA digests',
-        status: 'approved',
-        author: 'yoad',
-        suggestion_count: 2,
-        created_at: '2026-02-22',
-    },
-    {
-        id: 'p-003',
-        title: 'Enable dependency caching',
-        status: 'draft',
-        author: 'admin',
-        suggestion_count: 3,
-        created_at: '2026-02-21',
-    },
-    {
-        id: 'p-004',
-        title: 'Restrict secret access scopes',
-        status: 'rejected',
-        author: 'yoad',
-        suggestion_count: 1,
-        created_at: '2026-02-20',
-    },
-];
+import { useState, useEffect } from 'react';
+import { fetchProposals, type ProposalData } from '@/lib/api';
+import { DEMO_PROPOSALS } from '@/lib/demo-data';
 
 const STATUS_COLORS: Record<string, string> = {
     draft: '#6b7280',
@@ -47,11 +13,42 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function ProposalsPage() {
     const [filter, setFilter] = useState('all');
+    const [proposals, setProposals] = useState<ProposalData[]>(DEMO_PROPOSALS);
+    const [live, setLive] = useState(false);
+    const [applying, setApplying] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetchProposals()
+            .then((data) => { setProposals(data); setLive(true); })
+            .catch(() => { /* keep demo data */ });
+    }, []);
 
     const filtered =
         filter === 'all'
-            ? DEMO_PROPOSALS
-            : DEMO_PROPOSALS.filter((p) => p.status === filter);
+            ? proposals
+            : proposals.filter((p) => p.status === filter);
+
+    const handleApply = async (id: string) => {
+        setApplying(id);
+        try {
+            const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const res = await fetch(`${url}/api/v1/proposals/${id}/apply`, {
+                method: 'POST',
+                headers: { 'Authorization': 'ApiKey pipeline-admin-demo' } // simulated admin
+            });
+            if (res.ok) {
+                // Refresh list locally
+                setProposals(prev => prev.map(p => p.id === id ? { ...p, status: 'applied' } : p));
+            } else {
+                alert('Failed to apply proposal');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('API error');
+        } finally {
+            setApplying(null);
+        }
+    };
 
     return (
         <div>
@@ -60,11 +57,16 @@ export default function ProposalsPage() {
             </h1>
             <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>
                 Track and approve CI/CD modernization plans
+                {!live && (
+                    <span style={{ marginLeft: 12, color: '#f59e0b', fontSize: '0.8rem' }}>
+                        ⚠ API offline — showing demo data
+                    </span>
+                )}
             </p>
 
             {/* Filters */}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                {['all', 'draft', 'pending', 'approved', 'rejected'].map((s) => (
+                {['all', 'draft', 'pending', 'approved', 'applied', 'rejected'].map((s) => (
                     <button
                         key={s}
                         onClick={() => setFilter(s)}
@@ -102,19 +104,41 @@ export default function ProposalsPage() {
                                     by {p.author} · {p.created_at} · {p.suggestion_count} suggestion(s)
                                 </p>
                             </div>
-                            <span
-                                style={{
-                                    padding: '0.35rem 0.75rem',
-                                    borderRadius: '6px',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 600,
-                                    textTransform: 'uppercase',
-                                    color: '#fff',
-                                    background: STATUS_COLORS[p.status] || '#6b7280',
-                                }}
-                            >
-                                {p.status}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                {p.status === 'approved' && (
+                                    <button
+                                        onClick={() => handleApply(p.id)}
+                                        disabled={applying === p.id}
+                                        style={{
+                                            padding: '0.4rem 0.8rem',
+                                            borderRadius: '6px',
+                                            border: 'none',
+                                            background: '#3b82f6',
+                                            color: '#fff',
+                                            fontWeight: 600,
+                                            fontSize: '0.8rem',
+                                            cursor: applying === p.id ? 'wait' : 'pointer',
+                                            opacity: applying === p.id ? 0.7 : 1,
+                                            boxShadow: '0 4px 6px rgba(59, 130, 246, 0.2)'
+                                        }}
+                                    >
+                                        {applying === p.id ? 'Applying...' : 'Apply Fixes'}
+                                    </button>
+                                )}
+                                <span
+                                    style={{
+                                        padding: '0.35rem 0.75rem',
+                                        borderRadius: '6px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 600,
+                                        textTransform: 'uppercase',
+                                        color: '#fff',
+                                        background: STATUS_COLORS[p.status] || '#6b7280',
+                                    }}
+                                >
+                                    {p.status}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 ))}
